@@ -1,0 +1,29 @@
+name: 'Setup apptainer'
+description: 'Setup apptainer'
+author: 'I (@wx257osn2)'
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        echo "apptainer_version=v1.3.6" >> $GITHUB_ENV
+        if [ ${{ runner.os }} != "Linux" ]; then
+          echo "This action only supports Linux runner"
+          exit 1
+        fi
+    - shell: bash
+      run: |
+        if [ ${{ runner.arch }} = "X64" ]; then
+          download_arch="x86_64"
+        elif [ ${{ runner.arch }} == "ARM64" ]; then
+          download_arch="aarch64"
+          # Currently arm64 image doesn't contain uidmap package, so install it
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends uidmap
+        fi
+        curl -sSL https://github.com/wx257osn2/setup-apptainer/releases/download/${{ env.apptainer_version }}/${download_arch}.tar.zst | sudo tar -C /opt -x --use-compress-program="pzstd"
+    - shell: bash
+      run: |
+        sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0
+        echo "PATH=${PATH}:/opt/apptainer/bin" >> $GITHUB_ENV

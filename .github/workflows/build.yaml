@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    tags: [ "v[1-9]*.[0-9]+.[0-9]+" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-24.04
+            arch: x86_64
+          - image: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.image }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: 'apptainer/apptainer'
+        ref: ${{ github.ref_name }}
+    - name: build
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libseccomp-dev uidmap squashfs-tools fakeroot cryptsetup tzdata dh-apparmor curl wget git
+        ./mconfig -p /opt/apptainer
+        pushd ./builddir
+        make -j $(nproc)
+        sudo make install
+        popd
+        tar -C /opt -cf ./${{ matrix.arch }}.tar.zst --use-compress-program="pzstd" apptainer
+    - id: check-tag
+      run: |
+        if [[ ${{ github.ref }} =~ ^refs/tags/v[1-9][0-9]*\.[0-9]+\.[0-9]+$ ]]; then
+          echo "deploy-needed=true" >> $GITHUB_OUTPUT
+        fi
+    - uses: actions/upload-artifact@v4
+      if: steps.check-tag.outputs.deploy-needed == 'true'
+      with:
+        name: archive-${{ matrix.arch }}
+        path: ./${{ matrix.arch }}.tar.zst
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: write
+    steps:
+    - id: check-tag
+      run: |
+        if [[ ${{ github.ref }} =~ ^refs/tags/v[1-9][0-9]*\.[0-9]+\.[0-9]+$ ]]; then
+          echo "deploy-needed=true" >> $GITHUB_OUTPUT
+        fi
+    - uses: actions/download-artifact@v4
+      if: steps.check-tag.outputs.deploy-needed == 'true'
+      with:
+        name: archive-x86_64
+    - uses: actions/download-artifact@v4
+      if: steps.check-tag.outputs.deploy-needed == 'true'
+      with:
+        name: archive-aarch64
+    - uses: softprops/action-gh-release@v2
+      if: steps.check-tag.outputs.deploy-needed == 'true'
+      with:
+        files: |
+          x86_64.tar.zst
+          aarch64.tar.zst
