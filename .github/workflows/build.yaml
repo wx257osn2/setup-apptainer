@@ -19,7 +19,7 @@ jobs:
       run: |
         echo "set man-db/auto-update false" | sudo debconf-communicate
         sudo dpkg-reconfigure man-db
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         repository: 'apptainer/apptainer'
         ref: ${{ github.ref_name }}
