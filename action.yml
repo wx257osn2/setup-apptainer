@@ -21,7 +21,6 @@ runs:
           # Currently arm64 image doesn't contain uidmap package, so install it
           sudo apt-get install -y --no-install-recommends uidmap
         fi
-        sudo apt-get install -y --no-install-recommends squashfuse fuse2fs gocryptfs
         curl -sSL https://github.com/wx257osn2/setup-apptainer/releases/download/${{ env.apptainer_version }}/${download_arch}.tar.zst | sudo tar -C /opt -x --use-compress-program="pzstd"
     - shell: bash
       run: |
