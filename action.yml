@@ -7,7 +7,7 @@ runs:
   steps:
     - shell: bash
       run: |
-        echo "apptainer_version=v1.4.2" >> $GITHUB_ENV
+        echo "apptainer_version=v1.4.3" >> $GITHUB_ENV
         if [ ${{ runner.os }} != "Linux" ]; then
           echo "This action only supports Linux runner"
           exit 1
