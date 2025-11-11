@@ -5,6 +5,17 @@ on:
     tags: [ "v[1-9]*.[0-9]+.[0-9]+" ]
 
 jobs:
+  version-check:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v5
+    - run: |
+        tag=$(echo ${{ github.ref }} | sed 's@refs/tags/@@g')
+        version=$(grep 'apptainer_version=v' action.yml | sed 's/ *echo "apptainer_version=\([^"]*\)" >> $GITHUB_ENV/\1/g')
+        if [[ ${tag} != ${version} ]]; then
+          echo "${tag} is not match with ${version}, you've forgotten bumping up!!"
+          exit 1
+        fi
   build:
     strategy:
       matrix:
@@ -14,6 +25,7 @@ jobs:
           - image: ubuntu-24.04-arm
             arch: aarch64
     runs-on: ${{ matrix.image }}
+    needs: version-check
     steps:
     - name: stop update man-page
       run: |
