@@ -11,8 +11,9 @@ jobs:
     - uses: actions/checkout@v7
     - run: |
         tag=$(echo ${{ github.ref }} | sed 's@refs/tags/@@g')
-        version=$(grep 'apptainer_version=v' action.yml | sed 's/ *echo "apptainer_version=\([^"]*\)" >> $GITHUB_ENV/\1/g')
-        if [[ ${tag} != ${version} ]]; then
+        version_action=$(grep 'apptainer_version=v' action.yml | sed 's/ *echo "apptainer_version=\([^"]*\)" >> $GITHUB_ENV/\1/g')
+        version_readme=$(grep 'uses: wx257osn2/setup-apptainer@v' README.md | sed 's|  - uses: wx257osn2/setup-apptainer@\([^ ]*\).*|\1|g')
+        if [[ ${tag} != ${version_action} || ${tag} != ${version_readme} ]]; then
           echo "${tag} is not match with ${version}, you've forgotten bumping up!!"
           exit 1
         fi
