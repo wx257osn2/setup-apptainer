@@ -48,13 +48,26 @@ jobs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y libseccomp-dev uidmap squashfs-tools fakeroot cryptsetup tzdata dh-apparmor curl wget git
-        ./mconfig -p /opt/apptainer
+        sudo apt-get install -y libseccomp-dev libtalloc-dev libattr1-dev libprotobuf-c-dev libfuse3-dev zlib1g-dev liblzo2-dev liblz4-dev liblzma-dev libzstd-dev uuid-dev autoconf automake libtool pkg-config curl zstd patch
+        ./mconfig -p /opt/apptainer --with-suid
         pushd ./builddir
         make -j $(nproc)
-        sudo make install
+        make install
         popd
-        tar -C /opt -cf ./${{ matrix.ubuntu }}-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" apptainer
+        mkdir -p deps
+        ./scripts/download-dependencies ./deps
+        rm ./deps/e2fsprogs*.tar.gz
+        mkdir -p ./deps/e2fsprogs-e4f17380b2e5
+        curl -fsSL https://github.com/wx257osn2/tytso-e2fsprogs/archive/e4f17380b2e5b8356ab9806689f780d386ce8e3e.tar.gz | tar -xz -C "./deps/e2fsprogs-e4f17380b2e5" --strip-component=1
+        tar -czf "./deps/e2fsprogs-e4f17380b2e5.tar.gz" -C "./deps" "e2fsprogs-e4f17380b2e5"
+        rm -r "./deps/e2fsprogs-e4f17380b2e5"
+        pushd deps
+        ../scripts/compile-dependencies .
+        ../scripts/install-dependencies /opt/apptainer/libexec
+        popd
+        chmod 4755 /opt/apptainer/libexec/apptainer/bin/starter-suid
+        sed -i 's/^#\? *alow setuid-mount squashfs = .*/allow setuid-mount squashfs = yes/' /opt/apptainer/etc/apptainer/apptainer.conf
+        tar -C /opt -cf ./${{ matrix.ubuntu }}-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" --owner=0 --group=0 --numeric-owner apptainer
     - id: check-tag
       run: |
         if [[ ${{ github.ref }} =~ ^refs/tags/v[1-9][0-9]*\.[0-9]+\.[0-9]+$ ]]; then
