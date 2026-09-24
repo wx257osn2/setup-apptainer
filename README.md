@@ -4,7 +4,7 @@
 
 ```yaml
 runs:
-  - uses: wx257osn2/setup-apptainer@v1.5.3   # specify apptainer version
+  - uses: wx257osn2/setup-apptainer@v1.5.4   # specify apptainer version
   - run: apptainer --version
 ```
 
