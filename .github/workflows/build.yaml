@@ -79,6 +79,7 @@ jobs:
       with:
         name: archive-${{ matrix.ubuntu }}-${{ matrix.arch }}
         path: ./${{ matrix.ubuntu }}-${{ matrix.arch }}.tar.zst
+        retention-days: 1
   deploy:
     runs-on: ubuntu-slim
     needs: build
